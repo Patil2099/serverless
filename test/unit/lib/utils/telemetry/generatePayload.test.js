@@ -518,4 +518,51 @@ describe('test/unit/lib/utils/telemetry/generatePayload.test.js', () => {
       new Set(['region', 'format', 'path'])
     );
   });
+
+  it('Should correctly resolve `commandDataUsage` property', async () => {
+    const { serverless } = await runServerless({
+      fixture: 'httpApi',
+      command: 'print',
+    });
+    const payload = await generatePayload({
+      command: 'print',
+      options: {},
+      commandSchema: commandsSchema.get('print'),
+      serviceDir: serverless.serviceDir,
+      configuration: serverless.configurationInput,
+      commandUsage: {
+        history: new Map([
+          [
+            'firstStep',
+            [
+              ['firstQuestion', 'answer'],
+              ['otherQuestion', 'otherAnswer'],
+            ],
+          ],
+          ['secondStep', [['questionFromSecond', true]]],
+        ]),
+        stepDurations: new Map([
+          ['firstStep', 123],
+          ['secondStep', 456],
+        ]),
+      },
+    });
+
+    expect(payload.commandDataUsage).to.deep.equal({
+      durations: {
+        firstStep: 123,
+        secondStep: 456,
+      },
+      steps: [
+        [
+          'firstStep',
+          [
+            ['firstQuestion', 'answer'],
+            ['otherQuestion', 'otherAnswer'],
+          ],
+        ],
+        ['secondStep', [['questionFromSecond', true]]],
+      ],
+    });
+  });
 });
